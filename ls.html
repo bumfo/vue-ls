@@ -89,7 +89,7 @@
 
   var INF = 0x7fffffff
 
-  function insertionDistance(stack, needle, matches, factorStart = 1, factorEnd = 1) {
+  function insertionDistance(stack, needle, matches, factorStart = 1, factorEnd = 1, full = true) {
     var m = stack.length
     var n = needle.length
     var k = 0
@@ -109,7 +109,7 @@
     }
     i = m
     d += factorEnd * (i - j)
-    if (k === n) {
+    if (k === n || !full) {
       return d
     } else {
       return INF
