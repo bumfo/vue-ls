@@ -74,14 +74,6 @@
     return xhr
   }())
 
-
-
-  window.addEventListener('popstate', function(e) {
-    // console.log(e)
-
-    app.updateState(e.state)
-  })
-
   Vue.component('matched-entry', {
     template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
     props: {
@@ -94,7 +86,7 @@
 
   var INF = 0x7fffffff
 
-  function insertionDistance(stack, needle, matches, factorStart = 1, factorEnd = 1, full = true) {
+  function insertionDistance(stack, needle, matches, factorStart = 1, factorEnd = 1, full = false) {
     var m = stack.length
     var n = needle.length
     var k = 0
@@ -134,7 +126,6 @@
       if (!history.state) {
         this.path = location.pathname
       } else {
-        // console.log(history.state)
         this.updateState(history.state)
         this.queryUpdate()
       }
@@ -203,7 +194,7 @@
       matched() {
         return this.entries.map(entry => {
           var matches = []
-          var d = insertionDistance(entry.title, this.query, matches, 100, 1 / 100)
+          var d = insertionDistance(entry.title, this.query, matches, 100, 1 / 100, true)
           var hints = []
           var j = 0
           var l = 0
@@ -227,4 +218,9 @@
       }
     },
   })
+
+  window.addEventListener('popstate', function(e) {
+    app.updateState(e.state)
+  })
+
 </script>
