@@ -133,7 +133,7 @@
     watch: {
       query() {
         history.state.query = this.query
-        history.replaceState(history.state, document.title)
+        history.replaceState(history.state, this.title)
       },
       path() {
         if (this.isPopState) {
@@ -141,14 +141,14 @@
           this.isPopState = false
         } else {
           this.queryUpdate().then(() => {
-            document.title = this.title
-            this.query = ''
             if (this.inited) {
               history.pushState(this.state, this.title, this.path)
             } else {
               this.inited = true
               history.replaceState(this.state, this.title, this.path)
             }
+            document.title = this.title
+            this.query = ''
           })
         }
       }
