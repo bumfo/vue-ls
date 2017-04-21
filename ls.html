@@ -43,7 +43,7 @@
     <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
   </ul>
   <ul v-if="query.length">
-    <matched-entry v-for="entry in matched" v-bind:href="entry.href" v-bind:hints="entry.hints"></matched-entry>
+    <matched-entry v-for="entry in matched" v-bind:href="entry.href" v-bind:hints="entry.hints" v-bind:key="entry.href"></matched-entry>
   </ul>
 </main>
 
@@ -116,8 +116,20 @@
   var app = new Vue({
     el: 'main',
     data: {
+      path: '',
       query: '',
       entries: [{ title: '.', href: '.', }]
+    },
+    mounted() {
+      this.path = location.pathname
+    },
+    watch: {
+      path() {
+        xhr('/ls.php?d=' + this.path).then((text) => {
+          this.entries = JSON.parse(text)
+          this.query = ''
+        })
+      }
     },
     methods: {
       onkeypress(e) {
@@ -125,7 +137,12 @@
           e.preventDefault()
           if (this.matched.length) {
             var item = this.matched[0]
-            location.href = item.href
+            var href = item.href
+            if (href[href.length - 1] === '/') {
+              this.path = href
+            } else {
+              location.href = href
+            }
           }
         }
       }
@@ -156,12 +173,6 @@
           return { d, href: entry.href, hints }
         }).filter(a => a.d !== INF).sort((a, b) => a.d - b.d)
       }
-    },
-    mounted() {
-      xhr('/ls.php?d=' + location.pathname).then((text) => {
-        this.entries = JSON.parse(text)
-      })
-      console.log(this.entries)
     },
   })
 </script>
