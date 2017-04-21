@@ -32,19 +32,18 @@
   ul > li > a {
     text-decoration: none;
   }
+  ul > li > a > span.matched {
+    font-weight: 600;
+  }
 </style>
 
 <main>
   <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query"></form>
   <ul v-if="!query.length">
-    <li v-for="entry in entries">
-      <a v-bind:href="entry.href">{{ entry.title }}</a>
-    </li>
+    <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
   </ul>
   <ul v-if="query.length">
-    <li v-for="entry in matched">
-      <a v-bind:href="entry.href">{{ entry.title }}</a>
-    </li>
+    <matched-entry v-for="entry in matched" v-bind:href="entry.href" v-bind:hints="entry.hints"></matched-entry>
   </ul>
 </main>
 
@@ -75,6 +74,19 @@
     return xhr
   }())
 
+  Vue.component('matched-entry', {
+    template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
+    // render(createElement) {
+    //   return createElement('li', [createElement('a', {attrs: {href: this.href}}, [createElement('span', this.hints)])])
+    // },
+    props: {
+      href: '',
+      hints: {
+        type: Array
+      },
+    }
+  })
+
   var app = new Vue({
     el: 'main',
     data: {
@@ -83,7 +95,12 @@
     },
     computed: {
       matched() {
-        return this.entries.filter(entry => entry.title.indexOf(this.query) === 0)
+        return this.entries
+          .filter(entry => entry.title.indexOf(this.query) === 0)
+          .map(entry => ({
+            href: entry.href, 
+            hints: [{ text: entry.title.substr(0, this.query.length), matched: true }, { text: entry.title.substr(this.query.length), matched: false }]
+          }))
       }
     },
     mounted() {
