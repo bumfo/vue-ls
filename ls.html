@@ -35,21 +35,21 @@
 </style>
 
 <main>
-  <form><label>Ls</label><input autocomplete="off" autofocus=""></form>
-  <ul>
-    <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
+  <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query"></form>
+  <ul v-if="!query.length">
+    <li v-for="entry in entries">
+      <a v-bind:href="entry.href">{{ entry.title }}</a>
+    </li>
+  </ul>
+  <ul v-if="query.length">
+    <li v-for="entry in matched">
+      <a v-bind:href="entry.href">{{ entry.title }}</a>
+    </li>
   </ul>
 </main>
 
 <script src="/vue.js"></script>
 <script>
-  var app = new Vue({
-    el: 'main',
-    data: {
-      entries: [{ title: '..', href: '..', }, { title: '.', href: '.', }]
-    }
-  })
-
   var xhr = (function() {
     function onreadystatechange(e) {
       if (this.readyState === 4) {
@@ -75,8 +75,22 @@
     return xhr
   }())
 
-  xhr('/ls.php?d=' + location.pathname).then(function(text) {
-    app.entries = JSON.parse(text)
+  var app = new Vue({
+    el: 'main',
+    data: {
+      query: '',
+      entries: [{ title: '.', href: '.', }]
+    },
+    computed: {
+      matched() {
+        return this.entries.filter(entry => entry.title.indexOf(this.query) === 0)
+      }
+    },
+    mounted() {
+      xhr('/ls.php?d=' + location.pathname).then((text) => {
+        this.entries = JSON.parse(text)
+      })
+      console.log(this.entries)
+    },
   })
-  
 </script>
