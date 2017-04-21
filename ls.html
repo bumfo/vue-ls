@@ -38,7 +38,7 @@
 </style>
 
 <main>
-  <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query"></form>
+  <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query" v-on:keypress="onkeypress"></form>
   <ul v-if="!query.length">
     <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
   </ul>
@@ -87,20 +87,83 @@
     }
   })
 
+  var INF = 0x7fffffff
+
+  function insertionDistance(stack, needle, matches, factorStart = 1, factorEnd = 1) {
+    var m = stack.length
+    var n = needle.length
+    var k = 0
+    var d = 0
+    var j = 0
+    for (var i = 0; i < m && k < n; ++i) {
+      if (stack[i] === needle[k]) {
+        if (matches) matches.push(i)
+        if (j === 0) {
+          d += factorStart * (i - j)
+        } else {
+          d += i - j
+        }
+        j = i
+        ++k
+      }
+    }
+    i = m
+    d += factorEnd * (i - j)
+    if (k === n) {
+      return d
+    } else {
+      return INF
+    }
+  }
+
   var app = new Vue({
     el: 'main',
     data: {
       query: '',
       entries: [{ title: '.', href: '.', }]
     },
+    methods: {
+      onkeypress(e) {
+        if (e.code === 'Enter') {
+          e.preventDefault()
+          if (this.matched.length) {
+            var item = this.matched[0]
+            location.href = item.href
+          }
+        }
+      }
+    },
     computed: {
       matched() {
-        return this.entries
-          .filter(entry => entry.title.indexOf(this.query) === 0)
-          .map(entry => ({
-            href: entry.href, 
-            hints: [{ text: entry.title.substr(0, this.query.length), matched: true }, { text: entry.title.substr(this.query.length), matched: false }]
-          }))
+        return this.entries.map(entry => {
+          var matches = []
+          var d = insertionDistance(entry.title, this.query, matches, 100, 1 / 100)
+          var hints = []
+          var j = 0
+          var l = 0
+          for (var k = 0; k < matches.length; ++k) {
+            var i = matches[k]
+
+            if (i === l) {
+              l = i + 1
+            } else {
+              if (j < l) hints.push({ text: entry.title.substring(j, l), matched: true })
+              hints.push({ text: entry.title.substring(l, i), matched: false })
+              j = i
+              l = i + 1
+            }
+          }
+          i = entry.title.length
+          if (j < l) hints.push({ text: entry.title.substring(j, l), matched: true })
+          hints.push({ text: entry.title.substring(l, i), matched: false })
+          return { d, href: entry.href, hints }
+        }).filter(a => a.d !== INF).sort((a, b) => a.d - b.d)
+        // return this.entries
+        //   .filter(entry => entry.title.indexOf(this.query) === 0)
+        //   .map(entry => ({
+        //     href: entry.href, 
+        //     hints: [{ text: entry.title.substr(0, this.query.length), matched: true }, { text: entry.title.substr(this.query.length), matched: false }]
+        //   }))
       }
     },
     mounted() {
