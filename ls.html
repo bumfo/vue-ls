@@ -47,7 +47,7 @@
   </ul>
 </main>
 
-<script src="/vue.js"></script>
+<script src="/s/vue.js"></script>
 <script>
   var xhr = (function() {
     function onreadystatechange(e) {
@@ -126,8 +126,8 @@
       if (!history.state) {
         this.path = location.pathname
       } else {
-        this.updateState(history.state)
-        this.queryUpdate()
+        this.fetchState(history.state)
+        this.refresh()
       }
     },
     watch: {
@@ -139,27 +139,26 @@
         if (this.isPopState) {
           document.title = this.title
           this.isPopState = false
-          console.log('isPopState')
-          return
+        } else {
+          this.queryUpdate().then(() => {
+            document.title = this.title
+            this.query = ''
+            if (this.inited) {
+              history.pushState(this.state, this.title, this.path)
+            } else {
+              this.inited = true
+              history.replaceState(this.state, this.title, this.path)
+            }
+          })
         }
-        this.queryUpdate().then(() => {
-          document.title = this.title
-          this.query = ''
-          var state = {
-            path: this.path,
-            query: this.query,
-            entries: this.entries,
-          }
-          if (this.inited) {
-            history.pushState(state, this.title, this.path)
-          } else {
-            this.inited = true
-            history.replaceState(state, this.title, this.path)
-          }
-        })
       }
     },
     methods: {
+      refresh() {
+        this.queryUpdate().then(() => {
+          history.replaceState(this.state, this.title, this.path)
+        })
+      },
       queryUpdate() {
         return xhr('/ls.php?d=' + this.path).then((text) => {
           this.entries = JSON.parse(text)
@@ -179,15 +178,21 @@
           }
         }
       },
-      updateState(state) {
+      fetchState(state) {
         this.isPopState = true
         this.path = state.path
         this.query = state.query
         this.entries = state.entries
-        // this.isPopState = false
       }
     },
     computed: {
+      state() {
+        return {
+          path: this.path,
+          query: this.query,
+          entries: this.entries,
+        }
+      },
       title() {
         return 'Ls ' + this.path
       },
@@ -220,7 +225,7 @@
   })
 
   window.addEventListener('popstate', function(e) {
-    app.updateState(e.state)
+    app.fetchState(e.state)
   })
 
 </script>
