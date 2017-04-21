@@ -74,6 +74,14 @@
     return xhr
   }())
 
+
+
+  window.addEventListener('popstate', function(e) {
+    // console.log(e)
+
+    app.updateState(e.state)
+  })
+
   Vue.component('matched-entry', {
     template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
     props: {
@@ -118,20 +126,53 @@
     data: {
       path: '',
       query: '',
-      entries: [{ title: '.', href: '.', }]
+      entries: [{ title: '.', href: '.', }],
+      inited: false,
+      isPopState: false,
     },
     mounted() {
-      this.path = location.pathname
+      if (!history.state) {
+        this.path = location.pathname
+      } else {
+        // console.log(history.state)
+        this.updateState(history.state)
+      }
     },
     watch: {
+      query() {
+        history.state.query = this.query
+        history.replaceState(history.state, document.title)
+      },
       path() {
-        xhr('/ls.php?d=' + this.path).then((text) => {
-          this.entries = JSON.parse(text)
+        if (this.isPopState) {
+          document.title = this.title
+          this.isPopState = false
+          console.log('isPopState')
+          return
+        }
+        this.queryUpdate().then(() => {
           this.query = ''
+          var state = {
+            path: this.path,
+            query: this.query,
+            entries: this.entries,
+          }
+          if (this.inited) {
+            history.pushState(state, this.title, this.path)
+          } else {
+            this.inited = true
+            history.replaceState(state, this.title, this.path)
+          }
         })
       }
     },
     methods: {
+      queryUpdate() {
+        return xhr('/ls.php?d=' + this.path).then((text) => {
+          document.title = this.title
+          this.entries = JSON.parse(text)
+        })
+      },
       onkeypress(e) {
         if (e.code === 'Enter') {
           e.preventDefault()
@@ -145,9 +186,19 @@
             }
           }
         }
+      },
+      updateState(state) {
+        this.isPopState = true
+        this.path = state.path
+        this.query = state.query
+        this.entries = state.entries
+        // this.isPopState = false
       }
     },
     computed: {
+      title() {
+        return 'Ls ' + this.path
+      },
       matched() {
         return this.entries.map(entry => {
           var matches = []
