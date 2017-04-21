@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<title>Ls</title>
+
+<style>
+  body {
+    margin: 0;
+  }
+  body, input {
+    font: 1rem/1.4 'open sans', sans-serif;
+  }
+  input {
+    border: none;
+    outline: none;
+  }
+  main {
+    padding: 1rem 2.5rem;
+  }
+  label {
+    display: inline-block;
+    text-align: right;
+    width: 10rem;
+    margin-left: -10rem;
+  }
+  label:after {
+    content: '\00a0'
+  }
+  ul {
+    margin: 0;
+    padding: 1rem 0;
+    list-style: none;
+  }
+  ul > li > a {
+    text-decoration: none;
+  }
+</style>
+
+<main>
+  <form><label>Ls</label><input autocomplete="off" autofocus=""></form>
+  <ul>
+    <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
+  </ul>
+</main>
+
+<script src="/vue.js"></script>
+<script>
+  var app = new Vue({
+    el: 'main',
+    data: {
+      entries: [{ title: '..', href: '..', }, { title: '.', href: '.', }]
+    }
+  })
+
+  var xhr = (function() {
+    function onreadystatechange(e) {
+      if (this.readyState === 4) {
+        if (this.status === 200) {
+          this.done(this.responseText)
+        } else {
+          this.reject()
+        }
+      }
+    }
+
+    function xhr(uri) {
+      var request = new XMLHttpRequest()
+      request.open('get', uri)
+      request.send()
+      request.onreadystatechange = onreadystatechange
+      return new Promise(function(done, reject) {
+        request.done = done
+        request.reject = reject
+      })
+    }
+
+    return xhr
+  }())
+
+  xhr('/ls.php?d=' + location.pathname).then(function(text) {
+    app.entries = JSON.parse(text)
+  })
+  
+</script>
