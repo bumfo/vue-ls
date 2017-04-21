@@ -76,9 +76,6 @@
 
   Vue.component('matched-entry', {
     template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
-    // render(createElement) {
-    //   return createElement('li', [createElement('a', {attrs: {href: this.href}}, [createElement('span', this.hints)])])
-    // },
     props: {
       href: '',
       hints: {
@@ -158,12 +155,6 @@
           hints.push({ text: entry.title.substring(l, i), matched: false })
           return { d, href: entry.href, hints }
         }).filter(a => a.d !== INF).sort((a, b) => a.d - b.d)
-        // return this.entries
-        //   .filter(entry => entry.title.indexOf(this.query) === 0)
-        //   .map(entry => ({
-        //     href: entry.href, 
-        //     hints: [{ text: entry.title.substr(0, this.query.length), matched: true }, { text: entry.title.substr(this.query.length), matched: false }]
-        //   }))
       }
     },
     mounted() {
