@@ -40,7 +40,7 @@
 <main>
   <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query" v-on:keypress="onkeypress"></form>
   <ul v-if="!query.length">
-    <li v-for="entry in entries"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
+    <li v-for="entry in entries" v-bind:key="entry.href"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
   </ul>
   <ul v-if="query.length">
     <matched-entry v-for="entry in matched" v-bind:href="entry.href" v-bind:hints="entry.hints" v-bind:key="entry.href"></matched-entry>
@@ -136,6 +136,7 @@
       } else {
         // console.log(history.state)
         this.updateState(history.state)
+        this.queryUpdate()
       }
     },
     watch: {
@@ -151,6 +152,7 @@
           return
         }
         this.queryUpdate().then(() => {
+          document.title = this.title
           this.query = ''
           var state = {
             path: this.path,
@@ -169,7 +171,6 @@
     methods: {
       queryUpdate() {
         return xhr('/ls.php?d=' + this.path).then((text) => {
-          document.title = this.title
           this.entries = JSON.parse(text)
         })
       },
