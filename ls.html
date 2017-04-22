@@ -150,6 +150,10 @@
             }
             document.title = this.title
             this.query = ''
+          }).catch((err) => {
+            if (err !== 302) {
+              console.error(err)
+            }
           })
         }
       }
@@ -164,7 +168,24 @@
         return xhr('/ls.php?d=' + this.path).then((text) => {
           this.entries = JSON.parse(text)
         }).catch((err) => {
-          console.error(err)
+          switch (err) {
+          case 302:
+            location.href = this.path
+            throw err
+            break
+          case 403:
+          case 404:
+            var path = this.path
+            path = path.substr(0, path.length - 1)
+            path = path.substr(0, path.lastIndexOf('/') + 1)
+            this.entries = [{ title: '..', href: path, }]
+            this.query = ''
+            throw err
+            break
+          default:
+            throw err
+            break
+          }
         })
       },
       onkeypress(e) {

@@ -75,19 +75,21 @@ function die_code($code = 404, $message = '') {
   die('<!DOCTYPE html><title>' . $title . '</title><meta name=viewport content="width=100">' . $s . '. ' . $message);
 }
 
-function ls($cd) {
-  $normal = false;
-
+function ls($cd, &$err = 0) {
   if (!file_exists($cd)) {
+    $err = 404;
     $ls = ['(not found)'];
   } else if (!is_readable($cd)) {
+    $err = 403;
     $ls = ['(no access)'];
   } else if (!is_executable($cd)) {
+    $err = 403;
     $ls = ['(no list)'];
   } else if (strpos(basename($cd), '.') === 0) {
+    $err = 403;
     $ls = ['(no visibility)'];
   } else {
-    $normal = true;
+    $err = 0;
 
     $ocd = getcwd();
     chdir($cd);
@@ -96,7 +98,7 @@ function ls($cd) {
 
     foreach ($ls as $key => $value) {
       if ($value === 'index.php' || $value === 'index.html') {
-        $normal = false;
+        $err = 302;
         $ls = ['(has default)'];
         break;
       } else {
@@ -105,7 +107,7 @@ function ls($cd) {
     }
   }
 
-  if ($normal) {
+  if ($err === 0) {
     $is_root = $cd === __ROOT__;
     $ls = array_filter($ls, function ($x) use ($is_root) {
       if ($x === '..') {
@@ -196,7 +198,13 @@ if (!check_dir($cd)) {
   die_code(404);
 }
 
-$ls = ls($cd);
+$err = 0;
+$ls = ls($cd, $err);
+
+if ($err !== 0) {
+  die_code($err);
+}
+
 $dir = substr($cd, strlen(__ROOT__)) . '/';
 
 $obj = array_map(function ($u) use ($dir) {
