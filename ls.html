@@ -107,19 +107,33 @@
   var app = new Vue({
     components: {
       normalEntry: {
-        template: '<li><a v-bind:href="href">{{ title }}</a></li>',
+        template: '<li><a v-bind:href="href" v-on:click.stop="onclick">{{ title }}</a></li>',
         props: {
           href: '',
           title: '',
+        },
+        methods: {
+          onclick(e) {
+            this.$emit('click', {target: this, preventDefault() {
+              e.preventDefault()
+            }})
+          }
         }
       },
       matchedEntry: {
-        template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
+        template: '<li><a v-bind:href="href" v-on:click.stop="onclick"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
         props: {
           href: '',
           hints: {
             type: Array
           },
+        },
+        methods: {
+          onclick(e) {
+            this.$emit('click', {target: this, preventDefault() {
+              e.preventDefault()
+            }})
+          }
         }
       }
     },
@@ -167,10 +181,23 @@
       }
     },
     methods: {
+      fetchState(state) {
+        this.isPopState = true
+        this.path = state.path
+        this.query = state.query
+        this.entries = state.entries
+      },
       refresh() {
         this.queryUpdate().then(() => {
           history.replaceState(this.state, this.title, this.path)
         })
+      },
+      navigate(href) {
+        if (href[href.length - 1] === '/') {
+          this.path = href
+        } else {
+          location.href = href
+        }
       },
       queryUpdate() {
         return xhr('/ls.php?d=' + this.path).then((text) => {
@@ -199,26 +226,17 @@
       onkeypress(e) {
         if (e.code === 'Enter') {
           e.preventDefault()
-          if (this.matched.length) {
-            var item = this.matched[0]
-            var href = item.href
-            if (href[href.length - 1] === '/') {
-              this.path = href
-            } else {
-              location.href = href
+          if (this.query === '') {
+          } else {
+            if (this.matched.length) {
+              this.navigate(this.matched[0].href)
             }
           }
         }
       },
-      fetchState(state) {
-        this.isPopState = true
-        this.path = state.path
-        this.query = state.query
-        this.entries = state.entries
-      },
       entryClick(e) {
         e.preventDefault()
-        console.log(e.target)
+        this.navigate(e.target.href)
       }
     },
     computed: {
