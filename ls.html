@@ -42,10 +42,10 @@
 <main>
   <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query" v-on:keypress="onkeypress"></form>
   <ul v-if="!query.length">
-    <li v-for="entry in entries" v-bind:key="entry.href"><a v-bind:href="entry.href">{{ entry.title }}</a></li>
+    <normal-entry v-for="entry in entries" v-bind:key="entry.href" v-bind:href="entry.href" v-bind:title="entry.title" v-on:click="entryClick"></normal-entry>
   </ul>
   <ul v-if="query.length">
-    <matched-entry v-for="entry in matched" v-bind:href="entry.href" v-bind:hints="entry.hints" v-bind:key="entry.href"></matched-entry>
+    <matched-entry v-for="entry in matched" v-bind:key="entry.href" v-bind:href="entry.href" v-bind:hints="entry.hints" v-on:click="entryClick"></matched-entry>
   </ul>
 </main>
 
@@ -74,16 +74,6 @@
 
     return xhr
   }())
-
-  Vue.component('matched-entry', {
-    template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
-    props: {
-      href: '',
-      hints: {
-        type: Array
-      },
-    }
-  })
 
   var INF = 0x7fffffff
 
@@ -115,6 +105,24 @@
   }
 
   var app = new Vue({
+    components: {
+      normalEntry: {
+        template: '<li><a v-bind:href="href">{{ title }}</a></li>',
+        props: {
+          href: '',
+          title: '',
+        }
+      },
+      matchedEntry: {
+        template: '<li><a v-bind:href="href"><span v-for="hint in hints" v-bind:class="{ matched: hint.matched }">{{ hint.text }}</span></a></li>',
+        props: {
+          href: '',
+          hints: {
+            type: Array
+          },
+        }
+      }
+    },
     el: 'main',
     data: {
       path: '',
@@ -207,6 +215,10 @@
         this.path = state.path
         this.query = state.query
         this.entries = state.entries
+      },
+      entryClick(e) {
+        e.preventDefault()
+        console.log(e.target)
       }
     },
     computed: {
@@ -223,7 +235,7 @@
       matched() {
         return this.entries.map(entry => {
           var matches = []
-          var d = insertionDistance(entry.title, this.query, matches, 100, 1 / 100, true)
+          var d = insertionDistance(entry.title, this.query, matches, 100, 0, true)
           var hints = []
           var j = 0
           var l = 0

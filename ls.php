@@ -108,13 +108,8 @@ function ls($cd, &$err = 0) {
   }
 
   if ($err === 0) {
-    $is_root = $cd === __ROOT__;
-    $ls = array_filter($ls, function ($x) use ($is_root) {
-      if ($x === '..') {
-        return !$is_root;
-      } else {
-        return strpos($x, '.') !== 0 && is_readable($x);
-      }
+    $ls = array_filter($ls, function ($x) {
+      return strpos($x, '.') !== 0 && is_readable($x);
     });
 
     $dirs = array_filter($ls, function ($x) {
@@ -127,12 +122,16 @@ function ls($cd, &$err = 0) {
       return $x . '/';
     }, $dirs), $files);
 
+    $is_root = $cd === __ROOT__;
+    if (!$is_root) {
+      array_unshift($ls, '../');
+    }
+
     chdir($ocd);
 
     return $ls;
   } else {
     $is_root = $cd === __ROOT__;
-
     if (!$is_root) {
       array_unshift($ls, '..');
     }
