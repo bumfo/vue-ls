@@ -189,6 +189,7 @@
       },
       refresh() {
         this.queryUpdate().then(() => {
+          this.inited = true
           history.replaceState(this.state, this.title, this.path)
         })
       },
