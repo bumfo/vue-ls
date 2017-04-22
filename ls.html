@@ -37,6 +37,8 @@
   }
 </style>
 
+<script src="/s/vue.js"></script>
+
 <main>
   <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query" v-on:keypress="onkeypress"></form>
   <ul v-if="!query.length">
@@ -47,7 +49,6 @@
   </ul>
 </main>
 
-<script src="/s/vue.js"></script>
 <script>
   var xhr = (function() {
     function onreadystatechange(e) {
@@ -55,7 +56,7 @@
         if (this.status === 200) {
           this.done(this.responseText)
         } else {
-          this.reject()
+          this.reject(this.status)
         }
       }
     }
@@ -162,6 +163,8 @@
       queryUpdate() {
         return xhr('/ls.php?d=' + this.path).then((text) => {
           this.entries = JSON.parse(text)
+        }).catch((err) => {
+          console.error(err)
         })
       },
       onkeypress(e) {

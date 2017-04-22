@@ -75,34 +75,68 @@ function die_code($code = 404, $message = '') {
   die('<!DOCTYPE html><title>' . $title . '</title><meta name=viewport content="width=100">' . $s . '. ' . $message);
 }
 
-function ls($cd = null) {
-  $ocd = getcwd();
-  if ($cd === null) $cd = $ocd;
+function ls($cd) {
+  $normal = false;
+
   if (!file_exists($cd)) {
-    return $ls = [0 => '..', 1 => '(not found)'];
+    $ls = ['(not found)'];
+  } else if (!is_readable($cd)) {
+    $ls = ['(no access)'];
+  } else if (!is_executable($cd)) {
+    $ls = ['(no list)'];
+  } else if (strpos(basename($cd), '.') === 0) {
+    $ls = ['(no visibility)'];
+  } else {
+    $normal = true;
+
+    $ocd = getcwd();
+    chdir($cd);
+
+    $ls = scandir($cd, SCANDIR_SORT_ASCENDING);
+
+    foreach ($ls as $key => $value) {
+      if ($value === 'index.php' || $value === 'index.html') {
+        $normal = false;
+        $ls = ['(has default)'];
+        break;
+      } else {
+        continue;
+      }
+    }
   }
 
-  chdir($cd);
+  if ($normal) {
+    $is_root = $cd === __ROOT__;
+    $ls = array_filter($ls, function ($x) use ($is_root) {
+      if ($x === '..') {
+        return !$is_root;
+      } else {
+        return strpos($x, '.') !== 0 && is_readable($x);
+      }
+    });
 
-  $ls = scandir($cd, SCANDIR_SORT_ASCENDING);
-  if (!$ls) {
-    return $ls = [0 => '..', 1 => '(no access)'];
+    $dirs = array_filter($ls, function ($x) {
+      return is_dir($x) && is_executable($x);
+    });
+    $files = array_filter($ls, function ($x) {
+      return is_file($x);
+    });
+    $ls = array_merge(array_map(function ($x) {
+      return $x . '/';
+    }, $dirs), $files);
+
+    chdir($ocd);
+
+    return $ls;
+  } else {
+    $is_root = $cd === __ROOT__;
+
+    if (!$is_root) {
+      array_unshift($ls, '..');
+    }
+
+    return $ls;
   }
-
-  $is_root = $cd === __ROOT__;
-  $dirs = array_filter($ls, function ($x) use ($is_root) {
-    return $x !== '.' && !($is_root && $x === '..') && is_dir($x);
-  });
-  $files = array_filter($ls, function ($x) {
-    return strpos($x, '.') !== 0 && is_file($x) & $x !== '-i';
-  });
-  $ls = array_merge(array_map(function ($x) {
-    return $x . '/';
-  }, $dirs), $files);
-
-  chdir($ocd);
-
-  return $ls;
 }
 
 function normalize_path($path) {
@@ -131,15 +165,35 @@ function build_href($href, $query = '') {
   return join(array_map(function ($u) {return rawurlencode($u);}, explode('/', $href)), '/') . $query;
 }
 
-if (isset($_GET['d'])) {
-  $cd = realpath(__ROOT__ . $_GET['d']);
-} else {
-  die_code(404);
-  // $cd = realpath(__ROOT__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+function check_dir($cd) {
+  if (!is_dir($cd)) {
+    return false;
+  } else if (!is_readable($cd)) {
+    return false;
+  } else if (!is_executable($cd)) {
+    return false;
+  } else if (strpos(basename($cd), '.') === 0) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
-if (!is_dir($cd)) {
-  $cd = getcwd();
+if (!isset($_GET['d'])) {
+  $cd = realpath(__ROOT__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+
+  if (check_dir($cd)) {
+    echo file_get_contents(__ROOT__ . '/ls.html');
+    die;
+  } else {
+    die_code(404);
+  }
+}
+
+$cd = realpath(__ROOT__ . $_GET['d']);
+
+if (!check_dir($cd)) {
+  die_code(404);
 }
 
 $ls = ls($cd);
@@ -150,7 +204,7 @@ $obj = array_map(function ($u) use ($dir) {
   $query = '';
 
   if (!$href) {
-    $href = '#';
+    $href = $dir;
   }
 
   if (pathinfo($href, PATHINFO_EXTENSION) === 'js') {
