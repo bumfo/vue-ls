@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <title>Ls</title>
+<meta charset="utf-8">
+<meta name=viewport content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
 <style>
   body {
@@ -9,7 +11,12 @@
     font: 1rem/1.4 'open sans', sans-serif;
   }
   input {
+    -webkit-appearance: none;
+    margin: 0;
+    padding: 0;
+    background: none;
     border: none;
+    border-radius: 0;
     outline: none;
   }
   main {
@@ -35,13 +42,21 @@
   ul > li > a > span.matched {
     font-weight: 600;
   }
+
+  main::after {
+    content: 'a';
+    font-weight: 600;
+    position: absolute;
+    text-indent: -9999px;
+    /*opacity: 0;*/
+  }
 </style>
 <link href="/s/opensans/opensans.css" rel="stylesheet">
 
 <script src="/s/vue.js"></script>
 
 <main>
-  <form><label>Ls</label><input autocomplete="off" autofocus="" v-model="query" v-on:keypress="onkeypress"></form>
+  <label>Ls</label><input autocomplete="off" v-model="query" v-on:keypress="onkeypress" v-autofocus>
   <ul v-if="!query.length">
     <normal-entry v-for="entry in entries" v-bind:key="entry.href" v-bind:href="entry.href" v-bind:title="entry.title" v-on:click="entryClick"></normal-entry>
   </ul>
@@ -104,6 +119,14 @@
       return INF
     }
   }
+
+  Vue.directive('autofocus', {
+    inserted: function(el) {
+      if (!('touchstart' in window)) {
+        el.focus()
+      }
+    }
+  })
 
   var app = new Vue({
     components: {
@@ -226,7 +249,7 @@
         })
       },
       onkeypress(e) {
-        if (e.code === 'Enter') {
+        if (e.key === 'Enter') {
           e.preventDefault()
           if (this.query === '') {
           } else {
