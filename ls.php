@@ -1,79 +1,6 @@
 <?php
-define('__ROOT__', $_SERVER['DOCUMENT_ROOT']);
 
-function die_code($code = 404, $message = '') {
-  function mylowerstr($s) {
-    $l = strlen($s);
-    for ($i = 1; $i < $l - 1; $i++) {
-      $c = $s{$i - 1} . $s{$i} . $s{$i + 1};
-
-      if (preg_match('/[^a-zA-Z][A-Z][a-z]/', $c)) {
-        $s{$i} = strtolower($s{$i});
-      }
-
-    }
-    return $s;
-  }
-
-  $codes = [
-    100 => 'Continue',
-    101 => 'Switching Protocols',
-
-    200 => 'OK',
-    201 => 'Created',
-    202 => 'Accepted',
-    203 => 'Non-Authoritative Information',
-    204 => 'No Content',
-    205 => 'Reset Content',
-    206 => 'Partial Content',
-
-    300 => 'Multiple Choices',
-    301 => 'Moved Permanently',
-    302 => 'Found',
-    303 => 'See Other',
-    304 => 'Not Modified',
-    305 => 'Use Proxy',
-    306 => '(Unused)',
-    307 => 'Temporary Redirect',
-
-    400 => 'Bad Request',
-    401 => 'Unauthorized',
-    402 => 'Payment Required',
-    403 => 'Forbidden',
-    404 => 'Not Found',
-    405 => 'Method Not Allowed',
-    406 => 'Not Acceptable',
-    407 => 'Proxy Authentication Required',
-    408 => 'Request Timeout',
-    409 => 'Conflict',
-    410 => 'Gone',
-    411 => 'Length Required',
-    412 => 'Precondition Failed',
-    413 => 'Request Entity Too Large',
-    414 => 'Request-URI Too Long',
-    415 => 'Unsupported Media Type',
-    416 => 'Requested Range Not Satisfiable',
-    417 => 'Expectation Failed',
-
-    500 => 'Internal Server Error',
-    501 => 'Not Implemented',
-    502 => 'Bad Gateway',
-    503 => 'Service Unavailable',
-    504 => 'Gateway Timeout',
-    505 => 'HTTP Version Not Supported',
-  ];
-
-  if (isset($codes[$code])) {
-    $msg = $codes[$code];
-  } else {
-    $msg = 'Internal Server Error (' . $code . ')';
-  }
-  $s = mylowerstr($msg);
-  $title = $code . ' ' . $msg;
-
-  header('HTTP/1.1 ' . $title);
-  die('<!DOCTYPE html><title>' . $title . '</title><meta name=viewport content="width=100">' . $s . '. ' . $message);
-}
+require 'common.php';
 
 function ls($cd, &$err = 0) {
   if (!file_exists($cd)) {
@@ -180,12 +107,33 @@ function check_dir($cd) {
   }
 }
 
+function die_auto_cache($filename, $cache_filename) {
+  die_if_not_modified($filename);
+
+  if (file_exists($cache_filename)) {
+    echo file_get_contents($cache_filename);
+    die;
+  } else {
+    ob_start();
+    require $filename;
+    $content = ob_get_contents();
+    ob_end_clean();
+    if (is_writable_or_creatable($cache_filename)) {
+      file_put_contents($cache_filename, $content);
+      echo $content;
+      die;
+    } else {
+      return false;
+    }
+  }
+}
+
 if (!isset($_GET['d'])) {
   $cd = realpath(__ROOT__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
   if (check_dir($cd)) {
-    echo file_get_contents(__ROOT__ . '/ls.html');
-    die;
+    die_auto_cache('ls_front.php', './cache/ls.html');
+    die_code(403);
   } else {
     die_code(404);
   }
@@ -214,10 +162,10 @@ $obj = array_map(function ($u) use ($dir) {
     $href = $dir;
   }
 
-  if (pathinfo($href, PATHINFO_EXTENSION) === 'js') {
-    $href = '/test.php' . $href;
-    $query = 'w=1';
-  }
+  // if (pathinfo($href, PATHINFO_EXTENSION) === 'js') {
+  //   $href = '/test.php' . $href;
+  //   $query = 'w=1';
+  // }
 
   return [
     'href' => build_href($href, $query),
